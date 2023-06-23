@@ -5,12 +5,11 @@
 #include <algorithm>
 #include <string_view>
 
+#include "usefulfunctions.h"
+#include "types.h"
+
 namespace mylib
 {
-	using uint = unsigned int;
-	using ll = long long;
-	using ull = unsigned long long;
-
 	class BigInteger
 	{
 	public:
@@ -28,6 +27,8 @@ namespace mylib
 		inline bool isNegative(void) const noexcept;
 		inline bool isPositive(void) const noexcept;
 		inline void clear(void) const noexcept;
+		inline size_t getSize(void) const noexcept;
+		inline ull getAcutalSizeOfData(void) const noexcept;
 		void reserve(size_t size);
 
 		BigInteger& operator=(const BigInteger& b);

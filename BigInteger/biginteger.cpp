@@ -55,6 +55,17 @@ namespace mylib
 		for (size_t i = 0; i < size_; ++i)
 			data_[i] = 0;
 	}
+	inline size_t BigInteger::getSize(void) const noexcept
+	{
+		return size_;
+	}
+	inline ull BigInteger::getAcutalSizeOfData(void) const noexcept
+	{
+		ull size = 0;
+		for (size_t i = 0; i < size_; ++i)
+			size += GetNumberOfSetBits(data_[i]);
+		return size;
+	}
 	void BigInteger::reserve(size_t size)
 	{
 		if (size_ == size)
@@ -213,9 +224,12 @@ namespace mylib
 			const ull small_shift = val % (8 * sizeof(ull));
 			if (isSmalltIntegerOptimized())
 				data_[0] <<= small_shift;
-			// TODO: Do memory alloc and do shift 
 			else if (size_ == 2)
 			{
+				const uint data_for_index_2 = data_[1] >> (8 * sizeof(ull) - small_shift);
+				if (data_for_index_2)
+					reserve(size_ + 1);
+				data_[2] = data_for_index_2;
 				if (large_shift == 0)
 				{
 					data_[1] = (data_[1] << small_shift) | (data_[0] >> (8 * sizeof(ull) - small_shift));
@@ -229,6 +243,9 @@ namespace mylib
 			}
 			else
 			{
+				const ull real_size = getAcutalSizeOfData();
+				if (val + real_size > 8 * size_)
+					reserve(size_ + large_shift + 1);
 				for (size_t i = size_ - 1; i > large_shift; --i)
 					data_[i] = (data_[i - large_shift] << small_shift) | (data_[i - large_shift - 1] >> (8 * sizeof(ull) - small_shift));
 				for (size_t i = 0; i < large_shift; ++i)

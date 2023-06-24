@@ -63,8 +63,34 @@ namespace mylib
 	{
 		ull size = 0;
 		for (size_t i = 0; i < size_; ++i)
-			size += GetNumberOfSetBits(data_[i]);
+			size += popcount(data_[i]);
 		return size;
+	}
+	std::string BigInteger::getNumberByDecimalString(void) const
+	{
+		const int required_string_size = static_cast<int>(1.f + 8 * sizeof(ull) * size_ / 3.f);
+		const int required_auxiliary_size = static_cast<int>(1.f + required_string_size) / 2;
+
+		std::string s;
+		s.reserve(required_string_size + 1);
+		std::unique_ptr<char> unique_auxiliary{ new char[required_auxiliary_size] };
+		char* auxiliary = unique_auxiliary.get();
+
+		for (int i = 0; i < required_auxiliary_size; ++i)
+			auxiliary[i] = 0;
+
+		// TODO: Convert binary to string(BCD) using Double dabble algorithm
+
+		if (isNegative())
+			s += '-';
+
+		for (int i = required_auxiliary_size - 1; i >= 0; --i)
+		{
+			s += '0' + (auxiliary[i] >> 4);
+			s += '0' + (auxiliary[i] & 0xf);
+		}
+
+		return std::move(s);
 	}
 	void BigInteger::reserve(size_t size)
 	{
@@ -82,26 +108,26 @@ namespace mylib
 		data_ = tmp;
 		size_ = size;
 	}
-	BigInteger& BigInteger::operator=(const BigInteger& b)
+	BigInteger& BigInteger::operator=(const BigInteger& val)
 	{
 		
-		if (b.isSmalltIntegerOptimized())
+		if (val.isSmalltIntegerOptimized())
 		{
-			data_[0] = b.data_[0];
+			data_[0] = val.data_[0];
 			for (size_t i = 1; i < size_; ++i)
 				data_[i] = 0;
 		}
 		else
 		{
-			if (size_ < b.size_)
+			if (size_ < val.size_)
 			{
-				size_ = b.size_;
+				size_ = val.size_;
 				if (!isSmalltIntegerOptimized())
 					delete data_;
 				data_ = new ull[size_];
 			}
-			memcpy(data_, b.data_, 8 * size_);
-			memset(data_ + size_, 0, size_ - b.size_);
+			memcpy(data_, val.data_, 8 * size_);
+			memset(data_ + size_, 0, size_ - val.size_);
 		}
 		return *this;
 	}
@@ -118,7 +144,7 @@ namespace mylib
 		{
 			ull tmp = static_cast<ull>(data0[i0]) + data1[i1] + cf;
 			data0[i0] = static_cast<uint>(tmp & UINT_MAX);
-			cf = static_cast<bool>(tmp >> 8 * (sizeof(uint) - 1));
+			cf = static_cast<bool>(tmp >> 8 * sizeof(uint));
 		}
 		size_t new_size = std::max(size0 / 2, size1 / 2);
 		if (same_sign && cf)
@@ -130,13 +156,13 @@ namespace mylib
 		{
 			ull tmp = data0[i0] + cf;
 			data0[i0] = static_cast<uint>(tmp & UINT_MAX);
-			cf = static_cast<bool>(tmp >> 8 * (sizeof(uint) - 1));
+			cf = static_cast<bool>(tmp >> 8 * sizeof(uint));
 		}
 		for (; i1 < size1; ++i1)
 		{
 			ull tmp = data1[i1] + cf;
 			data0[i1] = static_cast<uint>(tmp & UINT_MAX);
-			cf = static_cast<bool>(tmp >> 8 * (sizeof(uint) - 1));
+			cf = static_cast<bool>(tmp >> 8 * sizeof(uint));
 		}
 		return *this;
 	}
@@ -226,10 +252,10 @@ namespace mylib
 				data_[0] <<= small_shift;
 			else if (size_ == 2)
 			{
-				const uint data_for_index_2 = data_[1] >> (8 * sizeof(ull) - small_shift);
-				if (data_for_index_2)
+				const uint data_at_index_2 = static_cast<uint>(data_[1] >> (8 * sizeof(ull) - small_shift));
+				if (data_at_index_2)
 					reserve(size_ + 1);
-				data_[2] = data_for_index_2;
+				data_[2] = data_at_index_2;
 				if (large_shift == 0)
 				{
 					data_[1] = (data_[1] << small_shift) | (data_[0] >> (8 * sizeof(ull) - small_shift));
@@ -314,6 +340,11 @@ namespace mylib
 	{
 		return (data_[size_ - 1] & (1 << 8 * (sizeof(unsigned) - 2)));
 	}
+	// Cannot insert inline. why?!?!
+	BigInteger operator-(const BigInteger& a)
+	{
+		return (~BigInteger{ a } + 1);
+	}
 	inline BigInteger operator+(const BigInteger& a, const BigInteger& b)
 	{
 		return (BigInteger{ a } += b);
@@ -326,11 +357,11 @@ namespace mylib
 	{
 		return (BigInteger{ a } *= b);
 	}
-	BigInteger operator/(const BigInteger& a, const BigInteger& b)
+	inline BigInteger operator/(const BigInteger& a, const BigInteger& b)
 	{
 		return (BigInteger{ a } /= b);
 	}
-	BigInteger operator%(const BigInteger& a, const BigInteger& b)
+	inline BigInteger operator%(const BigInteger& a, const BigInteger& b)
 	{
 		return (BigInteger{ a } %= b);
 	}
@@ -406,16 +437,8 @@ namespace mylib
 	{
 		return !(a > b);
 	}
-	inline std::istream& operator>>(std::istream& is, BigInteger& val)
-	{
-		std::string s;
-		is >> s;
-		val = BigInteger{ s };
-		return is;
-	}
 	std::ostream& operator<<(std::ostream& os, const BigInteger& val)
 	{
-		// TODO: Convert binary to string(BCD) using Double dabble algorithm.
-		return os;
+		return (os << val.getNumberByDecimalString());
 	}
 }

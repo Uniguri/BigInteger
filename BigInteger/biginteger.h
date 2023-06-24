@@ -1,11 +1,12 @@
 #pragma once
 
+#include <iostream>
 #include <cstring>
 #include <limits>
-#include <algorithm>
+#include <memory>
 #include <string_view>
 
-#include "usefulfunctions.h"
+#include "usefulfunctions.hpp"
 #include "types.h"
 
 namespace mylib
@@ -23,58 +24,60 @@ namespace mylib
 		BigInteger(BigInteger&& val) noexcept;
 		~BigInteger();
 
-		inline bool isSmalltIntegerOptimized(void) const noexcept;
-		inline bool isNegative(void) const noexcept;
-		inline bool isPositive(void) const noexcept;
-		inline void clear(void) const noexcept;
-		inline size_t getSize(void) const noexcept;
-		inline ull getAcutalSizeOfData(void) const noexcept;
+		bool isSmalltIntegerOptimized(void) const noexcept;
+		bool isNegative(void) const noexcept;
+		bool isPositive(void) const noexcept;
+		void clear(void) const noexcept;
+		size_t getSize(void) const noexcept;
+		ull getAcutalSizeOfData(void) const noexcept;
+		std::string getNumberByDecimalString(void) const;
 		void reserve(size_t size);
 
-		BigInteger& operator=(const BigInteger& b);
+		BigInteger& operator=(const BigInteger& val);
 		BigInteger& operator+=(const BigInteger& val);
 		BigInteger& operator-=(const BigInteger& val);
 		BigInteger& operator*=(const BigInteger& val);
 		BigInteger& operator/=(const BigInteger& val);
 		BigInteger& operator%=(const BigInteger& val);
 
-		inline BigInteger& operator&=(const BigInteger& val);
-		inline BigInteger& operator|=(const BigInteger& val);
-		inline BigInteger& operator^=(const BigInteger& val);
+		BigInteger& operator&=(const BigInteger& val);
+		BigInteger& operator|=(const BigInteger& val);
+		BigInteger& operator^=(const BigInteger& val);
 
 		BigInteger& operator<<=(const ull& val);
 		BigInteger& operator>>=(const ull& val);
 
-		inline BigInteger& operator++();
-		inline BigInteger operator++(int);
-		inline BigInteger& operator--();
-		inline BigInteger operator--(int);
+		BigInteger& operator++();
+		BigInteger operator++(int);
+		BigInteger& operator--();
+		BigInteger operator--(int);
 
-		friend inline BigInteger operator+(const BigInteger& a, const BigInteger& b);
-		friend inline BigInteger operator-(const BigInteger& a, const BigInteger& b);
-		friend inline BigInteger operator*(const BigInteger& a, const BigInteger& b);
-		friend inline BigInteger operator/(const BigInteger& a, const BigInteger& b);
-		friend inline BigInteger operator%(const BigInteger& a, const BigInteger& b);
+		friend BigInteger operator-(const BigInteger& a);
+		friend BigInteger operator+(const BigInteger& a, const BigInteger& b);
+		friend BigInteger operator-(const BigInteger& a, const BigInteger& b);
+		friend BigInteger operator*(const BigInteger& a, const BigInteger& b);
+		friend BigInteger operator/(const BigInteger& a, const BigInteger& b);
+		friend BigInteger operator%(const BigInteger& a, const BigInteger& b);
 
-		friend inline BigInteger operator~(const BigInteger& a);
-		friend inline BigInteger operator!(const BigInteger& a);
-		friend inline BigInteger operator&(const BigInteger& a, const BigInteger& b);
-		friend inline BigInteger operator|(const BigInteger& a, const BigInteger& b);
-		friend inline BigInteger operator^(const BigInteger& a, const BigInteger& b);
+		friend BigInteger operator~(const BigInteger& a);
+		friend BigInteger operator!(const BigInteger& a);
+		friend BigInteger operator&(const BigInteger& a, const BigInteger& b);
+		friend BigInteger operator|(const BigInteger& a, const BigInteger& b);
+		friend BigInteger operator^(const BigInteger& a, const BigInteger& b);
 
-		friend inline BigInteger operator<<(const BigInteger& a, const ull& b);
-		friend inline BigInteger operator>>(const BigInteger& a, const ull& b);
+		friend BigInteger operator<<(const BigInteger& a, const ull& b);
+		friend BigInteger operator>>(const BigInteger& a, const ull& b);
 
-		friend inline bool operator&&(const BigInteger& a, const BigInteger& b);
-		friend inline bool operator||(const BigInteger& a, const BigInteger& b);
-		friend inline bool operator==(const BigInteger& a, const BigInteger& b);
-		friend inline bool operator!=(const BigInteger& a, const BigInteger& b);
-		friend inline bool operator>(const BigInteger& a, const BigInteger& b);
-		friend inline bool operator<(const BigInteger & a, const BigInteger & b);
-		friend inline bool operator>=(const BigInteger& a, const BigInteger& b);
-		friend inline bool operator<=(const BigInteger & a, const BigInteger & b);
+		friend bool operator&&(const BigInteger& a, const BigInteger& b);
+		friend bool operator||(const BigInteger& a, const BigInteger& b);
+		friend bool operator==(const BigInteger& a, const BigInteger& b);
+		friend bool operator!=(const BigInteger& a, const BigInteger& b);
+		friend bool operator>(const BigInteger& a, const BigInteger& b);
+		friend bool operator<(const BigInteger & a, const BigInteger & b);
+		friend bool operator>=(const BigInteger& a, const BigInteger& b);
+		friend bool operator<=(const BigInteger & a, const BigInteger & b);
 
-		friend inline std::istream& operator>>(std::istream& is, BigInteger& val);
+		friend std::istream& operator>>(std::istream& is, BigInteger& val);
 		friend std::ostream& operator<<(std::ostream& os, const BigInteger& val);
 	private:
 		// Save address of actual data
@@ -85,6 +88,6 @@ namespace mylib
 		size_t size_;
 
 		// Check whether needs more space when adding.
-		inline bool NeedsMoreSpace(void) const noexcept;
+		bool NeedsMoreSpace(void) const noexcept;
 	};
 };

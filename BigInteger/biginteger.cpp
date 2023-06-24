@@ -44,7 +44,7 @@ namespace mylib
 	}
 	inline bool BigInteger::isNegative(void) const noexcept
 	{
-		return (data_[size_ - 1] & (1ull << (8 * sizeof(unsigned) - 1)));
+		return (data_[size_ - 1] & (1ull << (8 * sizeof(ull) - 1)));
 	}
 	inline bool BigInteger::isPositive(void) const noexcept
 	{
@@ -73,21 +73,62 @@ namespace mylib
 
 		std::string s;
 		s.reserve(required_string_size + 1);
-		std::unique_ptr<char> unique_auxiliary{ new char[required_auxiliary_size] };
-		char* auxiliary = unique_auxiliary.get();
+		std::unique_ptr<unsigned char> unique_auxiliary{ new unsigned char[required_auxiliary_size] };
+		unsigned char* auxiliary = unique_auxiliary.get();
 
 		for (int i = 0; i < required_auxiliary_size; ++i)
 			auxiliary[i] = 0;
+		
+		BigInteger temp_instance{*this};
+		if (isNegative())
+			temp_instance = -temp_instance;
+		const ull* data = temp_instance.data_;
 
-		// TODO: Convert binary to string(BCD) using Double dabble algorithm
+		// Carry flag
+		uint cf = 0;
+		for (int i = static_cast<int>(size_) - 1; i >= 0; --i)
+		{
+			for (int j = 8 * sizeof(ull) - 1; j >= 0; --j)
+			{
+				cf = (data[i] >> j) & 1;
+				for (int k = 0; k < required_auxiliary_size; ++k)
+				{
+					uint tmp = auxiliary[k];
+					if ((tmp & 0xf) > 4)
+						tmp += 3;
+					if ((tmp & 0xf0) > (4 << 4))
+						tmp += (3 << 4);
+					tmp = (tmp << 1) + cf;
+					cf = tmp >> 8;
+					auxiliary[k] = static_cast<char>(tmp);
+				}
+			}
+		}
 
 		if (isNegative())
 			s += '-';
 
-		for (int i = required_auxiliary_size - 1; i >= 0; --i)
+		int index_to_print_0 = required_auxiliary_size;
+		while (index_to_print_0-- > 0)
 		{
-			s += '0' + (auxiliary[i] >> 4);
-			s += '0' + (auxiliary[i] & 0xf);
+			if (auxiliary[index_to_print_0] & 0xf0)
+				break;
+			else if (auxiliary[index_to_print_0] & 0xf)
+			{
+				s += ('0' + (auxiliary[index_to_print_0--] & 0xf));
+				break;
+			}
+		}
+
+		if (index_to_print_0 < 0)
+			s += '0';
+		else
+		{
+			while (index_to_print_0 >= 0)
+			{
+				s += ('0' + (auxiliary[index_to_print_0] & 0xf0));
+				s += ('0' + (auxiliary[index_to_print_0--] & 0xf));
+			}
 		}
 
 		return std::move(s);

@@ -16,6 +16,28 @@ namespace mylib
 		: BigInteger(static_cast<ull>(0))
 	{
 		// TODO : Convert string(BCD) to binary using Double dabble algorithm
+		const bool is_negative = (val[0] == '-') ? true : false;
+		if (is_negative)
+			val = val.substr(1);
+		const int string_size = static_cast<int>(val.length());
+		const int required_auxiliary_size = static_cast<int>(string_size + 1) / 2;
+		const int required_data_size = 3 * string_size;
+		data_ = new ull[required_data_size];
+		std::unique_ptr<unsigned char> unique_auxiliary{ new unsigned char[required_auxiliary_size] };
+		unsigned char* auxiliary = unique_auxiliary.get();
+
+		{
+			int i = required_auxiliary_size;
+			int j = is_negative ? 1 : 0;
+			if (string_size % 2)
+				auxiliary[i--] = (val[j] - '0') & 0xf;
+			while (i--)
+			{
+				auxiliary[i] = (val[j++] - '0') << 4;
+				auxiliary[i] = (val[j++] - '0');
+			}
+		}
+
 	}
 	BigInteger::BigInteger(const BigInteger& val)
 		: data_(&small_integer_), small_integer_(val.small_integer_), size_(val.size_)

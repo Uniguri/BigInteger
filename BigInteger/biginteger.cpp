@@ -15,29 +15,60 @@ namespace mylib
 	BigInteger::BigInteger(std::string_view val)
 		: BigInteger(static_cast<ull>(0))
 	{
-		// TODO : Convert string(BCD) to binary using Double dabble algorithm
+		// Use double dabble
 		const bool is_negative = (val[0] == '-') ? true : false;
 		if (is_negative)
 			val = val.substr(1);
+
 		const int string_size = static_cast<int>(val.length());
 		const int required_auxiliary_size = static_cast<int>(string_size + 1) / 2;
-		const int required_data_size = 3 * string_size;
-		data_ = new ull[required_data_size];
+		const int required_data_size = size_ = 1 + (3 * string_size) / (8 * sizeof(ull));
+
+		if (required_data_size == 1)
+			data_ = &small_integer_;
+		else
+			data_ = new ull[required_data_size];
+
+		ull* data = data_;
 		std::unique_ptr<unsigned char> unique_auxiliary{ new unsigned char[required_auxiliary_size] };
 		unsigned char* auxiliary = unique_auxiliary.get();
 
 		{
-			int i = required_auxiliary_size;
-			int j = is_negative ? 1 : 0;
+			int i = required_auxiliary_size - 1;
+			int j = 0;
 			if (string_size % 2)
-				auxiliary[i--] = (val[j] - '0') & 0xf;
-			while (i--)
+				auxiliary[i--] = (val[j++] - '0') & 0xf;
+			while (i >= 0)
+				auxiliary[i--] = ((val[j++] - '0') << 4) + (val[j++] - '0');
+			for (int i = 0; i < required_data_size; ++i)
+				data[i] = 0;
+		}
+
+		// Borrow flag
+		uint bf = 0;
+		for (int i = 0; i < 8 * sizeof(ull) * required_data_size; ++i)
+		{
+			bf = 0;
+			for (int k = required_auxiliary_size - 1; k >= 0; --k)
 			{
-				auxiliary[i] = (val[j++] - '0') << 4;
-				auxiliary[i] = (val[j++] - '0');
+				uint tmp = (bf << 7) + (auxiliary[k] >> 1);
+				bf = auxiliary[k] & 1;
+				if ((tmp & 0xf) > 7)
+					tmp -= 3;
+				if ((tmp & 0xf0) > (7 << 4))
+					tmp -= (3 << 4);
+				auxiliary[k] = tmp;
+			}
+			for (int k = required_data_size - 1; k >= 0; --k)
+			{
+				ull tmp = (static_cast<ull>(bf) << (8 * sizeof(ull) - 1)) + (data[k] >> 1);
+				bf = data[k] & 1;
+				data[k] = tmp;
 			}
 		}
 
+		if(is_negative)
+			*this = -*this;
 	}
 	BigInteger::BigInteger(const BigInteger& val)
 		: data_(&small_integer_), small_integer_(val.small_integer_), size_(val.size_)
@@ -90,6 +121,7 @@ namespace mylib
 	}
 	std::string BigInteger::getNumberByDecimalString(void) const
 	{
+	// Use double dabble
 		const int required_string_size = static_cast<int>(1.f + 8 * sizeof(ull) * size_ / 3.f);
 		const int required_auxiliary_size = static_cast<int>(1.f + required_string_size) / 2;
 
@@ -142,16 +174,13 @@ namespace mylib
 			}
 		}
 
-		if (index_to_print_0 < 0)
-			s += '0';
-		else
+		while (index_to_print_0 >= 0)
 		{
-			while (index_to_print_0 >= 0)
-			{
-				s += ('0' + (auxiliary[index_to_print_0] & 0xf0));
-				s += ('0' + (auxiliary[index_to_print_0--] & 0xf));
-			}
+			s += ('0' + ((auxiliary[index_to_print_0] & 0xf0) >> 4));
+			s += ('0' + (auxiliary[index_to_print_0--] & 0xf));
 		}
+		if (!s.length())
+			s = "0";
 
 		return std::move(s);
 	}
@@ -210,7 +239,7 @@ namespace mylib
 			cf = static_cast<bool>(tmp >> 8 * sizeof(uint));
 		}
 		size_t new_size = std::max(size0 / 2, size1 / 2);
-		if (same_sign && cf)
+		if (same_sign && (cf || isNegative()))
 			++new_size;
 		reserve(new_size);
 		size0 = 2 * size_;
@@ -499,6 +528,13 @@ namespace mylib
 	bool operator<=(const BigInteger& a, const BigInteger& b)
 	{
 		return !(a > b);
+	}
+	std::istream& operator>>(std::istream& is, BigInteger& val)
+	{
+		std::string s;
+		is >> s;
+		val = BigInteger{ s };
+		return is;
 	}
 	std::ostream& operator<<(std::ostream& os, const BigInteger& val)
 	{
